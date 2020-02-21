@@ -181,6 +181,7 @@ return [
         Collective\Html\HtmlServiceProvider::class,
         Cog\Laravel\Ban\Providers\BanServiceProvider::class,
         ConsoleTVs\Charts\ChartsServiceProvider::class,
+        Tymon\JWTAuth\Providers\LaravelServiceProvider::class,
 
     ],
 

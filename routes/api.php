@@ -21,7 +21,15 @@ Route::post('login', 'Student\StudentAuthController@login');
 Route::post('register', 'Student\StudentAuthController@register');
 Route::get('verifyemail/{token}', 'Student\StudentAuthController@verify')->name('verify');
 
-Route::group(['middleware' => 'auth.jwt'], function () {
+//Route::group(['middleware' => 'auth.jwt'], function () {
+//    Route::get('logout', 'Student\StudentAuthController@logout');
+//    Route::get('me', 'Student\StudentAuthController@me');
+//    Route::post('me/update/{user}', 'Student\StudentAuthController@update');
+//    Route::get('course/{course}', 'Student\StudentAuthController@enroll');
+//    Route::get('mycourses', 'Student\StudentAuthController@courses');
+//    Route::post('course/comment/{course}', 'Student\StudentAuthController@comment');
+//});
+Route::group(['middleware' => 'auth:api'], function () {
     Route::get('logout', 'Student\StudentAuthController@logout');
     Route::get('me', 'Student\StudentAuthController@me');
     Route::post('me/update/{user}', 'Student\StudentAuthController@update');

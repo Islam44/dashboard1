@@ -16,7 +16,7 @@ class CreateStudentCourseTable extends Migration
         Schema::create('student_course', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('course_id')->nullable()
-                ->on('courses')->onUpdate('cascade')->onDelete('set null');;
+                ->on('courses')->onUpdate('cascade')->onDelete('set null');
             $table->foreign('course_id')->references('id')->on('courses');
             $table->unsignedBigInteger('student_id')->nullable()
                 ->on('students')->onUpdate('cascade')->onDelete('set null');;

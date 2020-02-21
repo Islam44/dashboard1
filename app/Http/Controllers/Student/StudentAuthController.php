@@ -16,6 +16,7 @@ use Carbon\Carbon;
 use http\QueryString;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -28,7 +29,7 @@ class StudentAuthController extends Controller
 
     public function __construct()
     {
-        Config::set('auth.providers.users.model', Student::class);
+       // Config::set('auth.providers.users.model', Student::class);
     }
 
     /**
@@ -38,22 +39,9 @@ class StudentAuthController extends Controller
      */
     public function logout(Request $request)
     {
-        $this->validate($request, [
-            'token' => 'required'
-        ]);
-        try {
             $this->lastLogin();
-            JWTAuth::invalidate($request->token);
-            return response()->json([
-                'success' => true,
-                'message' => 'User logged out successfully'
-            ]);
-        } catch (JWTException $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Sorry, the user cannot be logged out'
-            ], 500);
-        }
+            $this->guard()->logout();
+            return response()->json(['message' => 'Successfully logged out']);
     }
 
     public function register(Request $request)
@@ -73,9 +61,10 @@ class StudentAuthController extends Controller
 
     public function update(Request $request, Student $user)
     {
-        if (JWTAuth::user()->id != $user->id) {
+        if ($this->guard()->user()->id != $user->id) {
             return response()->json('not same user');
-        } else {
+        }
+        else {
 
 //        $rules = [
 //            'email' => 'email|unique:users,email,' . $user->id,
@@ -125,28 +114,25 @@ class StudentAuthController extends Controller
     public function login(Request $request)
     {
         $input = $request->only('email', 'password');
-        $token = null;
-        if (!$token = JWTAuth::attempt($input)) {
+        if ($token = $this->guard()->attempt($input)) {
             return response()->json([
-                'success' => false,
-                'message' => 'Invalid Email or Password',
-            ], 401);
+                'access_token' => $token,
+                'token_type' => 'bearer',
+                'expires_in' => $this->guard()->factory()->getTTL() * 60
+            ]);
         }
-        return response()->json([
-            'success' => true,
-            'token' => $token,
-        ]);
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
 
     public function me()
     {
-        $user = JWTAuth::user();
+        $user = $this->guard()->user();
         return response()->json(['status' => 'success', 'user' => $user]);
     }
 
     public function enroll(Course $course)
     {
-        $student = JWTAuth::user();
+        $student = $this->guard()->user();
         $student->courses()->attach([$course->id]);
         $student->notify(new enroll($student, $course));
     }
@@ -163,7 +149,7 @@ class StudentAuthController extends Controller
         }
         $data = $request->all();
         $data['body'] = $request->body;
-        $data['student_id'] = JWTAuth::user()->id;
+        $data['student_id'] = $this->guard()->user()->id;
         $data['course_id'] = $course->id;
         $comment = Comment::create($data);
         return response()->json([
@@ -175,7 +161,7 @@ class StudentAuthController extends Controller
     public function courses()
     {
         return response()->json(['data' =>
-            JWTAuth::user()->courses()->with('teacher')
+            $this->guard()->user()->courses()->with('teacher')
                 ->with(['comments' => function ($query) {
                         $query->where('status', '=', 1);
                     }]
@@ -184,9 +170,13 @@ class StudentAuthController extends Controller
     }
     function lastLogin()
     {
-        JWTAuth::user()->update([
+        $this->guard()->user()->update([
             'last_login_at' => Carbon::now()->toDateTimeString(),
             'last_login_ip' =>\Request::ip()
         ]);
+    }
+    public function guard()
+    {
+        return  Auth::guard('api');
     }
 }
